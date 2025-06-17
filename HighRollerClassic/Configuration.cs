@@ -7,9 +7,13 @@ namespace HighRollerClassic;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
+    public string greetingMessage = "";
+    public string loseMessage = "";
     public int MaxBet = 0;
-    public List<int[]> MultiplierSettings { get; set; } = [];
+    public Dictionary<int, string> multiplierMessages = new();
+    public List<int[]> multiplierSettings { get; set; } = [];
     public int Version { get; set; } = 0;
+
 
     // the below exist just to make saving less cumbersome
     public void Save()

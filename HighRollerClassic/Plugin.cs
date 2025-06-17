@@ -5,6 +5,8 @@ using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using HighRollerClassic.Windows;
 
 namespace HighRollerClassic;
@@ -21,9 +23,11 @@ public sealed class Plugin : IDalamudPlugin
 
         SettingsWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this);
+        MacroWindow = new MacroWindow(this);
 
         WindowSystem.AddWindow(SettingsWindow);
         WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(MacroWindow);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -42,7 +46,7 @@ public sealed class Plugin : IDalamudPlugin
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
         // Example Output: 00:57:54.959 | INF | [HighRollerClassic] ===A cool log message from Sample Plugin===
-        Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
+        Log.Information($"=== {PluginInterface.Manifest.Name}=== ONLINE");
 
         ChatGui.ChatMessageUnhandled += ChatMessage;
     }
@@ -71,6 +75,7 @@ public sealed class Plugin : IDalamudPlugin
     public Configuration Configuration { get; init; }
     private ConfigWindow SettingsWindow { get; init; }
     private MainWindow MainWindow { get; init; }
+    private MacroWindow MacroWindow { get; init; }
 
     public void Dispose()
     {
@@ -110,6 +115,13 @@ public sealed class Plugin : IDalamudPlugin
         if (int.TryParse(cleanedMessage[^1], out var result)) MainWindow.AddPlayerRoll(tObject.GameObjectId, result);
     }
 
+    public unsafe void SendMessage(string message)
+    {
+        var mes = Utf8String.FromString($"/yell {message}");
+        UIModule.Instance()->ProcessChatBoxEntry(mes);
+        mes->Dtor(true);
+    }
+
     private void OnCommand(string command, string args)
     {
         // in response to the slash command, just toggle the display status of our main ui
@@ -124,6 +136,11 @@ public sealed class Plugin : IDalamudPlugin
     public void ToggleConfigUI()
     {
         SettingsWindow.Toggle();
+    }
+
+    public void ToggleMacroUI()
+    {
+        MacroWindow.Toggle();
     }
 
     public void ToggleMainUI()
