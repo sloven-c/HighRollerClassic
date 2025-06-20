@@ -33,18 +33,18 @@ public class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        if (ImGui.Button("Add new...") || Configuration.multiplierSettings.Count == 0) AddMultiplier();
+        if (ImGui.Button("Add new...") || Configuration.MultiplierSettings.Count == 0) AddMultiplier();
         ImGui.SameLine();
         if (ImGui.Button("Macro settings")) Plugin.ToggleMacroUI();
         ImGui.Spacing();
 
         const float width = 50f;
-        for (var i = 0; i < Configuration.multiplierSettings.Count; i++)
+        for (var i = 0; i < Configuration.MultiplierSettings.Count; i++)
         {
             ImGui.SetNextItemWidth(width);
-            ImGui.InputInt($"##multiplier{i}", ref Configuration.multiplierSettings[i][0], 0);
-            Configuration.multiplierSettings[i][0] =
-                VerifyValue(Configuration.multiplierSettings[i][0]);
+            ImGui.InputInt($"##multiplier{i}", ref Configuration.MultiplierSettings[i][0], 0);
+            Configuration.MultiplierSettings[i][0] =
+                VerifyValue(Configuration.MultiplierSettings[i][0]);
 
             ImGui.SameLine();
 
@@ -52,28 +52,28 @@ public class ConfigWindow : Window, IDisposable
             ImGui.SameLine();
 
             ImGui.SetNextItemWidth(width);
-            ImGui.InputInt($"##roll{i}", ref Configuration.multiplierSettings[i][1], 0);
-            Configuration.multiplierSettings[i][1] = VerifyValue(Configuration.multiplierSettings[i][1]);
+            ImGui.InputInt($"##roll{i}", ref Configuration.MultiplierSettings[i][1], 0);
+            Configuration.MultiplierSettings[i][1] = VerifyValue(Configuration.MultiplierSettings[i][1]);
 
             ImGui.SameLine();
 
             ImGui.SetNextItemWidth(width * 1.1f);
-            ImGui.Combo($"##comparators{i}", ref Configuration.multiplierSettings[i][2], comparators,
+            ImGui.Combo($"##comparators{i}", ref Configuration.MultiplierSettings[i][2], comparators,
                         comparators.Length);
 
             ImGui.SameLine();
-            if (Configuration.multiplierSettings.Count > 1)
+            if (Configuration.MultiplierSettings.Count > 1)
             {
                 if (ImGui.Button($"-##{i}"))
                     RemoveMultiplier(i);
             }
 
             ImGui.SameLine();
-            var color = ImGui.ColorConvertU32ToFloat4((uint)Configuration.multiplierSettings[i][3]);
+            var color = ImGui.ColorConvertU32ToFloat4((uint)Configuration.MultiplierSettings[i][3]);
             var newColor =
-                ImGuiComponents.ColorPickerWithPalette(i, $"{Configuration.multiplierSettings[i][0]}x multiplier",
+                ImGuiComponents.ColorPickerWithPalette(i, $"{Configuration.MultiplierSettings[i][0]}x multiplier",
                                                        color);
-            Configuration.multiplierSettings[i][3] = (int)ImGui.ColorConvertFloat4ToU32(newColor);
+            Configuration.MultiplierSettings[i][3] = (int)ImGui.ColorConvertFloat4ToU32(newColor);
         }
 
         ImGui.Spacing();
@@ -109,12 +109,12 @@ public class ConfigWindow : Window, IDisposable
     private void AddMultiplier()
     {
         int[] newMultiplier = [0, 0, 1, 0]; //multiplier, roll, comparator, color
-        Configuration.multiplierSettings.Add(newMultiplier);
+        Configuration.MultiplierSettings.Add(newMultiplier);
     }
 
     private void RemoveMultiplier(int i)
     {
-        Configuration.multiplierMessages.Remove(Configuration.multiplierSettings[i][0]);
-        Configuration.multiplierSettings.Remove(Configuration.multiplierSettings[i]);
+        Configuration.MultiplierMessages.Remove(Configuration.MultiplierSettings[i][0]);
+        Configuration.MultiplierSettings.Remove(Configuration.MultiplierSettings[i]);
     }
 }

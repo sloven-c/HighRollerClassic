@@ -48,7 +48,7 @@ public class MainWindow : Window, IDisposable
 
         // ImGui.TextUnformatted(Configuration.message);
 
-        if (Configuration.multiplierSettings.Count == 0)
+        if (Configuration.MultiplierSettings.Count == 0)
         {
             ImGui.Text("Please set up multipliers in settings first!");
             return;
@@ -125,7 +125,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.TableNextRow();
 
                 var color = 0;
-                foreach (var mp in Configuration.multiplierSettings)
+                foreach (var mp in Configuration.MultiplierSettings)
                     if (mp[0] == players[pID].multipliers[i])
                     {
                         color = mp[3];
@@ -151,7 +151,8 @@ public class MainWindow : Window, IDisposable
 
     private void Greet()
     {
-        var greeting = $"{Configuration.greetingMessage}\n{GetRollsMultipliers()}";
+        return; //fixme
+        var greeting = $"{Configuration.Greeting.message}\n{GetRollsMultipliers()}";
         Plugin.SendMessage(greeting);
     }
 
@@ -160,13 +161,13 @@ public class MainWindow : Window, IDisposable
         var message = "";
 
         // loop
-        for (var i = 0; i < Configuration.multiplierSettings.Count; i++)
+        for (var i = 0; i < Configuration.MultiplierSettings.Count; i++)
         {
-            var mp = Configuration.multiplierSettings[i];
+            var mp = Configuration.MultiplierSettings[i];
             var multiplier = mp[0];
             var roll = mp[1];
             var plus = mp[2] != (int)Comparators.Equal;
-            var last = i == Configuration.multiplierSettings.Count - 1;
+            var last = i == Configuration.MultiplierSettings.Count - 1;
 
             message += $"[{roll}{(plus ? "+" : "")}: {multiplier}x]{(!last ? " O" : "")} ";
         }
@@ -202,14 +203,14 @@ public class MainWindow : Window, IDisposable
 
     public (int bet, int multiplier) ManipulateBet(int roll, int bet)
     {
-        foreach (var mp in Configuration.multiplierSettings)
+        foreach (var mp in Configuration.MultiplierSettings)
             // if our comparator is equals (exact) and our roll matches given one from the player
             // multiply the bet with multiplier and return the value
             if (mp[2] == (int)Comparators.Equal && mp[1] == roll)
                 return (bet * mp[0], mp[0]);
 
         // if not we go again
-        foreach (var mp in Configuration.multiplierSettings.AsEnumerable().Reverse())
+        foreach (var mp in Configuration.MultiplierSettings.AsEnumerable().Reverse())
         {
             // if the comparator type is exact we skip the multiplier as we've done that above in previous loop
             // if the bet is bigger than the roll we set it to we multiply the bet with multiplier and return the value
