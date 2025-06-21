@@ -112,14 +112,7 @@ public sealed class Plugin : IDalamudPlugin
 
         if (!validGambler) return;
 
-        if (int.TryParse(cleanedMessage[^1], out var result)) MainWindow.AddPlayerRoll(tObject.GameObjectId, result);
-    }
-
-    public unsafe void SendMessage(string message)
-    {
-        var mes = Utf8String.FromString($"/yell {message}");
-        UIModule.Instance()->ProcessChatBoxEntry(mes);
-        mes->Dtor(true);
+        if (int.TryParse(cleanedMessage[^1], out var result)) MainWindow.AddPlayerRoll(tObject, result);
     }
 
     private void OnCommand(string command, string args)

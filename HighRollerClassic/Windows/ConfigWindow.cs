@@ -42,9 +42,9 @@ public class ConfigWindow : Window, IDisposable
         for (var i = 0; i < Configuration.MultiplierSettings.Count; i++)
         {
             ImGui.SetNextItemWidth(width);
-            ImGui.InputInt($"##multiplier{i}", ref Configuration.MultiplierSettings[i][0], 0);
-            Configuration.MultiplierSettings[i][0] =
-                VerifyValue(Configuration.MultiplierSettings[i][0]);
+            ImGui.InputInt($"##multiplier{i}", ref Configuration.MultiplierSettings[i].multiplier, 0);
+            Configuration.MultiplierSettings[i].multiplier =
+                VerifyValue(Configuration.MultiplierSettings[i].multiplier);
 
             ImGui.SameLine();
 
@@ -52,14 +52,16 @@ public class ConfigWindow : Window, IDisposable
             ImGui.SameLine();
 
             ImGui.SetNextItemWidth(width);
-            ImGui.InputInt($"##roll{i}", ref Configuration.MultiplierSettings[i][1], 0);
-            Configuration.MultiplierSettings[i][1] = VerifyValue(Configuration.MultiplierSettings[i][1]);
+            ImGui.InputInt($"##roll{i}", ref Configuration.MultiplierSettings[i].roll, 0);
+            Configuration.MultiplierSettings[i].roll = VerifyValue(Configuration.MultiplierSettings[i].roll);
 
             ImGui.SameLine();
 
             ImGui.SetNextItemWidth(width * 1.1f);
-            ImGui.Combo($"##comparators{i}", ref Configuration.MultiplierSettings[i][2], comparators,
-                        comparators.Length);
+            var comparator = (int)Configuration.MultiplierSettings[i].comparator;
+            if (ImGui.Combo($"##comparators{i}", ref comparator, comparators,
+                            comparators.Length))
+                Configuration.MultiplierSettings[i].comparator = (DataStructures.Comparators)comparator;
 
             ImGui.SameLine();
             if (Configuration.MultiplierSettings.Count > 1)
@@ -69,11 +71,12 @@ public class ConfigWindow : Window, IDisposable
             }
 
             ImGui.SameLine();
-            var color = ImGui.ColorConvertU32ToFloat4((uint)Configuration.MultiplierSettings[i][3]);
-            var newColor =
-                ImGuiComponents.ColorPickerWithPalette(i, $"{Configuration.MultiplierSettings[i][0]}x multiplier",
-                                                       color);
-            Configuration.MultiplierSettings[i][3] = (int)ImGui.ColorConvertFloat4ToU32(newColor);
+            var colour = Configuration.MultiplierSettings[i].colour;
+            var newColour =
+                ImGuiComponents.ColorPickerWithPalette(
+                    i, $"{Configuration.MultiplierSettings[i].multiplier}x multiplier",
+                    colour);
+            Configuration.MultiplierSettings[i].colour = newColour;
         }
 
         ImGui.Spacing();
@@ -108,13 +111,12 @@ public class ConfigWindow : Window, IDisposable
 
     private void AddMultiplier()
     {
-        int[] newMultiplier = [0, 0, 1, 0]; //multiplier, roll, comparator, color
-        Configuration.MultiplierSettings.Add(newMultiplier);
+        Configuration.MultiplierSettings.Add(new DataStructures.MpSettings());
     }
 
     private void RemoveMultiplier(int i)
     {
-        Configuration.MultiplierMessages.Remove(Configuration.MultiplierSettings[i][0]);
+        Configuration.MacroSettings.Remove(Configuration.MultiplierSettings[i].multiplier);
         Configuration.MultiplierSettings.Remove(Configuration.MultiplierSettings[i]);
     }
 }

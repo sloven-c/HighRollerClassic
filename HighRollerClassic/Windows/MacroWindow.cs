@@ -29,7 +29,7 @@ public class MacroWindow : Window, IDisposable
     public override void PreDraw()
     {
         foreach (var mp in Configuration.MultiplierSettings)
-            Configuration.MultiplierMessages.TryAdd(mp[0], ("", new Configuration.MacroCheckbox()));
+            Configuration.MacroSettings.TryAdd(mp.multiplier, ("", new DataStructures.MacroCheckbox()));
     }
 
     public override void Draw()
@@ -37,10 +37,10 @@ public class MacroWindow : Window, IDisposable
         DrawCheckboxes(ref Configuration.Greeting.checkbox, "greeting");
         ImGui.TextUnformatted("Greeting message: ");
         ImGui.SameLine();
-        ImGui.InputText("##greeting", ref Configuration.Greeting.message, maxLen);
+        ImGui.InputText("##greeting", ref Configuration.Greeting.message, maxLen, ImGuiInputTextFlags.ReadOnly);
 
         // get all multipliers
-        foreach (var message in Configuration.MultiplierMessages)
+        foreach (var message in Configuration.MacroSettings)
         {
             var msg = message.Value;
             DrawCheckboxes(ref msg.checkbox, message.Key.ToString());
@@ -49,7 +49,7 @@ public class MacroWindow : Window, IDisposable
 
 
             if (ImGui.InputText($"##multiplerMSG{message.Key}", ref msg.message, maxLen))
-                Configuration.MultiplierMessages[message.Key] = msg;
+                Configuration.MacroSettings[message.Key] = msg;
         }
 
         DrawCheckboxes(ref Configuration.Lose.checkbox, "loser");
@@ -61,7 +61,7 @@ public class MacroWindow : Window, IDisposable
         if (ImGui.Button("Save")) Configuration.Save();
     }
 
-    private void DrawCheckboxes(ref Configuration.MacroCheckbox mChk, string id)
+    private static void DrawCheckboxes(ref DataStructures.MacroCheckbox mChk, string id)
     {
         ImGui.Checkbox($"##Preview_{id}", ref mChk.Preview);
         if (ImGui.IsItemHovered()) ImGui.SetTooltip("Preview");

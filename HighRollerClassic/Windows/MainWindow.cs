@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using Serilog;
@@ -12,12 +13,9 @@ namespace HighRollerClassic.Windows;
 public class MainWindow : Window, IDisposable
 {
     private readonly Configuration Configuration;
-    private readonly Dictionary<ulong, PlayerData> players;
+    private readonly Dictionary<ulong, DataStructures.PlayerData> players;
     private readonly Plugin Plugin;
     private readonly int step;
-
-    // fixme find a better way to do this shit
-    // private int bet;
 
     // We give this window a hidden ID using ##
     // So that the user will see "My Amazing Window" as window title,
@@ -34,7 +32,7 @@ public class MainWindow : Window, IDisposable
         Configuration = plugin.Configuration;
         step = 500_000;
         Plugin = plugin;
-        players = new Dictionary<ulong, PlayerData>();
+        players = new Dictionary<ulong, DataStructures.PlayerData>();
     }
 
     public void Dispose() { }
@@ -46,11 +44,11 @@ public class MainWindow : Window, IDisposable
         // provide through our bindings, leading to a Crash to Desktop.
         // Replacements can be found in the ImGuiHelpers Class
 
-        // ImGui.TextUnformatted(Configuration.message);
-
         if (Configuration.MultiplierSettings.Count == 0)
         {
             ImGui.Text("Please set up multipliers in settings first!");
+            ImGui.SameLine();
+            SettingsButton();
             return;
         }
 
@@ -65,13 +63,13 @@ public class MainWindow : Window, IDisposable
         ImGui.SameLine();
         if (ImGui.Button("Greeting")) Greet();
         ImGui.SameLine();
-        if (ImGui.Button("Settings")) Plugin.ToggleConfigUI();
+        SettingsButton();
 
         if (!targetIsPlayer || tPlayer == null) return;
 
         var pID = tPlayer.GameObjectId;
 
-        if (!players.ContainsKey(pID)) players.Add(pID, new PlayerData());
+        if (!players.ContainsKey(pID)) players.Add(pID, new DataStructures.PlayerData());
 
         var inputBuffer = players[pID].bet.ToString("N0");
         ImGui.SetNextItemWidth(150f);
@@ -104,9 +102,9 @@ public class MainWindow : Window, IDisposable
         {
             if (players.TryGetValue(pID, out var tempPlayer))
             {
-                tempPlayer.rolls = new List<int>();
-                tempPlayer.multipliers = new List<int>();
-                tempPlayer.bets = new List<int>();
+                tempPlayer.rolls = [];
+                tempPlayer.multipliers = [];
+                tempPlayer.bets = [];
                 players[pID] = tempPlayer;
             }
         }
@@ -124,16 +122,17 @@ public class MainWindow : Window, IDisposable
             {
                 ImGui.TableNextRow();
 
-                var color = 0;
+                var color = new Vector4();
                 foreach (var mp in Configuration.MultiplierSettings)
-                    if (mp[0] == players[pID].multipliers[i])
+                    if (mp.multiplier == players[pID].multipliers[i])
                     {
-                        color = mp[3];
+                        color = mp.colour;
                         Log.Information("{ManifestName} Color {Color}\n", Plugin.PluginInterface.Manifest.Name, color);
                         break;
                     }
 
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, (uint)color);
+                // todo set bg color
+                // ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, (int)color);
 
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(players[pID].rolls[i].ToString());
@@ -149,24 +148,25 @@ public class MainWindow : Window, IDisposable
         }
     }
 
-    private void Greet()
-    {
-        return; //fixme
-        var greeting = $"{Configuration.Greeting.message}\n{GetRollsMultipliers()}";
-        Plugin.SendMessage(greeting);
+    private void SettingsButton() {
+        if (ImGui.Button("Settings")) Plugin.ToggleConfigUI();
+    }
+
+    private void Greet() {
+        var messageToSend = new Message(null, null, Configuration.Greeting.message);
+        messageToSend.Send(Configuration.Greeting.checkbox.Yell, GetRollsMultipliers());
     }
 
     private string GetRollsMultipliers()
     {
         var message = "";
 
-        // loop
         for (var i = 0; i < Configuration.MultiplierSettings.Count; i++)
         {
             var mp = Configuration.MultiplierSettings[i];
-            var multiplier = mp[0];
-            var roll = mp[1];
-            var plus = mp[2] != (int)Comparators.Equal;
+            var multiplier = mp.multiplier;
+            var roll = mp.roll;
+            var plus = mp.comparator != DataStructures.Comparators.Equal;
             var last = i == Configuration.MultiplierSettings.Count - 1;
 
             message += $"[{roll}{(plus ? "+" : "")}: {multiplier}x]{(!last ? " O" : "")} ";
@@ -179,17 +179,16 @@ public class MainWindow : Window, IDisposable
 
     private void UpdatePlayerBet(ulong id, int bet)
     {
-        if (players.ContainsKey(id))
+        if (players.TryGetValue(id, out var exData))
         {
-            var exData = players[id];
             exData.bet = bet;
             players[id] = exData;
         }
     }
 
-    public void AddPlayerRoll(ulong id, int roll)
+    public void AddPlayerRoll(IGameObject target, int roll)
     {
-        if (players.TryGetValue(id, out var exData))
+        if (players.TryGetValue(target.GameObjectId, out var exData))
         {
             var resManip = ManipulateBet(roll, exData.bet);
             exData.bet = resManip.bet;
@@ -197,7 +196,24 @@ public class MainWindow : Window, IDisposable
             exData.bets.Add(exData.bet);
             exData.multipliers.Add(resManip.multiplier);
 
-            players[id] = exData;
+            string? message = null;
+            var yell = false;
+
+            if (resManip.multiplier == 0) {
+                message = Configuration.Lose.message;
+                yell = Configuration.Lose.checkbox.Yell;
+            }
+            else if (Configuration.MacroSettings.TryGetValue(resManip.multiplier, out var value)) {
+                message = value.message;
+                yell = value.checkbox.Yell;
+            }
+
+            if (message != null) {
+                var messageToSend = new Message(target.Name.ToString(), exData.bet, message);
+                messageToSend.Send(yell, null);
+            }
+
+            players[target.GameObjectId] = exData;
         }
     }
 
@@ -206,32 +222,19 @@ public class MainWindow : Window, IDisposable
         foreach (var mp in Configuration.MultiplierSettings)
             // if our comparator is equals (exact) and our roll matches given one from the player
             // multiply the bet with multiplier and return the value
-            if (mp[2] == (int)Comparators.Equal && mp[1] == roll)
-                return (bet * mp[0], mp[0]);
+            if (mp.comparator == DataStructures.Comparators.Equal && mp.roll == roll)
+                return (bet * mp.multiplier, mp.multiplier);
 
         // if not we go again
         foreach (var mp in Configuration.MultiplierSettings.AsEnumerable().Reverse())
         {
             // if the comparator type is exact we skip the multiplier as we've done that above in previous loop
             // if the bet is bigger than the roll we set it to we multiply the bet with multiplier and return the value
-            if (mp[2] == (int)Comparators.Equal) continue;
+            if (mp.comparator == DataStructures.Comparators.Equal) continue;
 
-            if (roll >= mp[1]) return (bet * mp[0], mp[0]);
+            if (roll >= mp.roll) return (bet * mp.multiplier, mp.multiplier);
         }
 
         return (0, 0);
-    }
-
-    private struct PlayerData()
-    {
-        public int bet = 0;
-        public List<int> rolls = new();
-        public List<int> bets = new();
-        public List<int> multipliers = new();
-    }
-
-    private enum Comparators
-    {
-        Equal = 0
     }
 }
